@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -13,6 +14,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -78,6 +81,23 @@ public class MainActivity extends Activity {
 
         // Get the local Bluetooth adapter
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        final WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
+        class WifiReceiver extends BroadcastReceiver
+        {
+            public void onReceive(Context c, Intent intent)
+            {
+                List<ScanResult> wifis = wifiManager.getScanResults();
+                for (ScanResult wifi : wifis)
+                {
+                    Log.println(Log.INFO, "wifitest", "Wifi " + wifi.BSSID + ";" + wifi.SSID + ";" + wifi.frequency + ";" + wifi.capabilities);
+                }
+            }
+        }
+        WifiReceiver wifiReceiver = new WifiReceiver();
+        registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        wifiManager.startScan();
+        Log.println(Log.INFO, "wifitest", "Wifi start scanning...");
     }
 
     @Override
