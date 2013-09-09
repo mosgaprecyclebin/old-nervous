@@ -1,5 +1,11 @@
 package ch.ethz.nervous;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -8,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -18,7 +25,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-
 
 public class MainActivity extends Activity {
     // Debugging
@@ -31,6 +37,7 @@ public class MainActivity extends Activity {
     // Member fields
     private BluetoothAdapter mBtAdapter;
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
+    private FileOutputStream log;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +78,29 @@ public class MainActivity extends Activity {
 
         // Get the local Bluetooth adapter
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
+    }
+
+    @Override
+    protected void onStart() {
+    	super.onStart();
+        try {
+        	File dir = new File(Environment.getExternalStorageDirectory(), "nervous");
+        	dir.mkdir();
+        	File file = new File(dir, "log.txt");
+        	log = new FileOutputStream(file, true);
+        } catch (IOException ex) {
+        	ex.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	try {
+    		log.close();
+    	} catch (IOException ex) {
+    		ex.printStackTrace();
+    	}
     }
 
     @Override
@@ -142,6 +172,15 @@ public class MainActivity extends Activity {
                 // If it's already paired, skip it, because it's been listed already
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
                     mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    Calendar cal = Calendar.getInstance();
+	                String timestamp = dateFormat.format(cal.getTime());
+                    String line = device.getAddress() + "," + device.getName() + "," + timestamp + "\n";
+                    try {
+                    	log.write(line.getBytes());
+                    } catch (IOException ex) {
+                    	ex.printStackTrace();
+                    }
                 }
             // When discovery is finished, change the Activity title
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
@@ -154,5 +193,14 @@ public class MainActivity extends Activity {
             }
         }
     };
+
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
 
 }
