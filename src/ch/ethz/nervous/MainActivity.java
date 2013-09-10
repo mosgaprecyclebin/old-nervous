@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
     private FileOutputStream log;
     private WifiManager wifiManager;
+    private boolean bluetoothFinished, wifiFinished;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +64,7 @@ public class MainActivity extends Activity {
         mNewDevicesArrayAdapter = new ArrayAdapter<String>(this, R.layout.device_name);
 
         // Find and set up the ListView for newly discovered devices
-        ListView newDevicesListView = (ListView) findViewById(R.id.new_devices);
+        ListView newDevicesListView = (ListView) findViewById(R.id.devices);
         newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
 
         // Register for broadcasts when a device is discovered
@@ -125,10 +126,7 @@ public class MainActivity extends Activity {
 
         // Indicate scanning in the title
         setProgressBarIndeterminateVisibility(true);
-        setTitle(R.string.scanning);
-
-        // Turn on sub-title for new devices
-        findViewById(R.id.title_new_devices).setVisibility(View.VISIBLE);
+        setTitle(R.string.title_scanning);
 
         // If we're already discovering, stop it
         if (mBtAdapter.isDiscovering()) {
@@ -148,7 +146,6 @@ public class MainActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
 
-            // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -157,20 +154,23 @@ public class MainActivity extends Activity {
                     mNewDevicesArrayAdapter.add("BLUETOOTH: " + device.getName() + "\n" + device.getAddress());
                     log("bluetooth", device.getAddress(), device.getName());
                 }
-            // When discovery is finished, change the Activity title
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                setProgressBarIndeterminateVisibility(false);
-                setTitle(R.string.select_device);
                 if (mNewDevicesArrayAdapter.getCount() == 0) {
-                    String noDevices = getResources().getText(R.string.none_found).toString();
+                    String noDevices = getResources().getText(R.string.nothing_found).toString();
                     mNewDevicesArrayAdapter.add(noDevices);
                 }
+            	bluetoothFinished = true;
             } else if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
                 List<ScanResult> wifis = wifiManager.getScanResults();
                 for (ScanResult wifi : wifis) {
                     mNewDevicesArrayAdapter.add("WIFI: " + wifi.SSID + "\n" + wifi.BSSID);
                     log("wifi", wifi.BSSID, wifi.SSID);
                 }
+            	wifiFinished = true;
+            }
+            if (bluetoothFinished && wifiFinished) {
+            	setProgressBarIndeterminateVisibility(false);
+            	setTitle(R.string.app_name);
             }
         }
     };
