@@ -124,19 +124,22 @@ public class MainActivity extends Activity {
     private void doDiscovery() {
         if (D) Log.d(TAG, "doDiscovery()");
 
-        // Indicate scanning in the title
         setProgressBarIndeterminateVisibility(true);
         setTitle(R.string.title_scanning);
 
-        // If we're already discovering, stop it
-        if (mBtAdapter.isDiscovering()) {
-            mBtAdapter.cancelDiscovery();
+        if (mBtAdapter.isEnabled()) {
+        	mBtAdapter.startDiscovery();
+        } else {
+        	bluetoothFinished = true;
         }
 
-        // Request discover from BluetoothAdapter
-        mBtAdapter.startDiscovery();
+        if (wifiManager.isWifiEnabled()) {
+        	wifiManager.startScan();
+        } else {
+        	wifiFinished = true;
+        }
 
-        wifiManager.startScan();
+        checkIfFinished();
     }
 
     // The BroadcastReceiver that listens for discovered devices and
@@ -168,12 +171,16 @@ public class MainActivity extends Activity {
                 }
             	wifiFinished = true;
             }
-            if (bluetoothFinished && wifiFinished) {
-            	setProgressBarIndeterminateVisibility(false);
-            	setTitle(R.string.app_name);
-            }
+            checkIfFinished();
         }
     };
+
+    private void checkIfFinished() {
+        if (bluetoothFinished && wifiFinished) {
+        	setProgressBarIndeterminateVisibility(false);
+        	setTitle(R.string.title_done);
+        }
+    }
 
     private void log(String type, String mac, String name) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
