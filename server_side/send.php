@@ -2,15 +2,16 @@
 
 	//receive json data 
 	$json = file_get_contents('php://input');
-	$obj = json_decode($json);
+	$json_obj = json_decode($json);
 
-	echo $obj;
+	echo $json_obj;
 
-	
-
-	if($obj['device_id']!=''){
-		$handle = fopen($obj['device_id'], 'a');
-		fwrite($handle, $obj['type'].','.$obj['name'].','.$obj['mac'].','.$obj['time']);
+	foreach ($json_obj as $obj) {
+		echo $obj['device_id'];
+		if($obj['device_id']!=''){
+			$handle = fopen($obj['device_id']."txt", 'a');
+			fwrite($handle, $obj['type'].','.$obj['name'].','.$obj['mac'].','.$obj['time']);
+		}
 	}
 
 ?>
