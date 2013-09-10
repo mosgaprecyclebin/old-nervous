@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
     private BluetoothAdapter mBtAdapter;
     private ArrayAdapter<String> mNewDevicesArrayAdapter;
     private FileOutputStream log;
+    private WifiManager wifiManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,31 +74,17 @@ public class MainActivity extends Activity {
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        this.registerReceiver(mReceiver, filter);
+        registerReceiver(mReceiver, filter);
 
         // Register for broadcasts when discovery has finished
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        this.registerReceiver(mReceiver, filter);
+        registerReceiver(mReceiver, filter);
 
         // Get the local Bluetooth adapter
         mBtAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        final WifiManager wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
-        class WifiReceiver extends BroadcastReceiver
-        {
-            public void onReceive(Context c, Intent intent)
-            {
-                List<ScanResult> wifis = wifiManager.getScanResults();
-                for (ScanResult wifi : wifis)
-                {
-                    Log.println(Log.INFO, "wifitest", "Wifi " + wifi.BSSID + ";" + wifi.SSID + ";" + wifi.frequency + ";" + wifi.capabilities);
-                }
-            }
-        }
-        WifiReceiver wifiReceiver = new WifiReceiver();
-        registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        wifiManager.startScan();
-        Log.println(Log.INFO, "wifitest", "Wifi start scanning...");
+        wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
+        registerReceiver(mReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
     }
 
     @Override
@@ -156,6 +143,8 @@ public class MainActivity extends Activity {
 
         // Request discover from BluetoothAdapter
         mBtAdapter.startDiscovery();
+
+        wifiManager.startScan();
     }
 
     // The on-click listener for all devices in the ListViews
@@ -191,16 +180,8 @@ public class MainActivity extends Activity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 // If it's already paired, skip it, because it's been listed already
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-                    mNewDevicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    Calendar cal = Calendar.getInstance();
-	                String timestamp = dateFormat.format(cal.getTime());
-                    String line = device.getAddress() + "," + device.getName() + "," + timestamp + "\n";
-                    try {
-                    	log.write(line.getBytes());
-                    } catch (IOException ex) {
-                    	ex.printStackTrace();
-                    }
+                    mNewDevicesArrayAdapter.add("BLUETOOTH: " + device.getName() + "\n" + device.getAddress());
+                    log("bluetooth", device.getAddress(), device.getName());
                 }
             // When discovery is finished, change the Activity title
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
@@ -210,17 +191,26 @@ public class MainActivity extends Activity {
                     String noDevices = getResources().getText(R.string.none_found).toString();
                     mNewDevicesArrayAdapter.add(noDevices);
                 }
+            } else if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
+                List<ScanResult> wifis = wifiManager.getScanResults();
+                for (ScanResult wifi : wifis) {
+                    mNewDevicesArrayAdapter.add("WIFI: " + wifi.SSID + "\n" + wifi.BSSID);
+                    log("wifi", wifi.BSSID, wifi.SSID);
+                }
             }
         }
     };
 
-    /* Checks if external storage is available for read and write */
-    public boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
+    private void log(String type, String mac, String name) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Calendar cal = Calendar.getInstance();
+        String timestamp = dateFormat.format(cal.getTime());
+        String line = type + "," + mac + "," + name + "," + timestamp + "\n";
+        try {
+        	log.write(line.getBytes());
+        } catch (IOException ex) {
+        	Log.println(Log.ERROR, "nervous", ex.getMessage());
         }
-        return false;
     }
 
 }
