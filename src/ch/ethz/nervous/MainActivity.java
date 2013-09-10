@@ -3,10 +3,19 @@ package ch.ethz.nervous;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -20,6 +29,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings.Secure;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -27,6 +37,7 @@ import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
     // Debugging
@@ -39,6 +50,8 @@ public class MainActivity extends Activity {
     private FileOutputStream log;
     private WifiManager wifiManager;
     private boolean bluetoothFinished, wifiFinished;
+    
+    private static String url = "http://worx.li/nervous/send.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -193,6 +206,38 @@ public class MainActivity extends Activity {
         } catch (IOException ex) {
         	Log.println(Log.ERROR, "nervous", ex.getMessage());
         }
+        
+        try {
+        	JSONObject json = new JSONObject();
+        	json.put("device_id", Secure.getString(getBaseContext().getContentResolver(),
+                    Secure.ANDROID_ID));
+        	json.put("type", type);
+        	json.put("mac", mac);
+        	json.put("name", name);
+        	json.put("time", timestamp);
+            send(json);
+        } catch (Throwable t) {
+            Toast.makeText(this, "Request failed: " + t.toString(),
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+    
+    private static HttpResponse send(JSONObject json) {
+        try {
+            HttpPost httpPost = new HttpPost(url);
+            httpPost.setEntity(new ByteArrayEntity(json.toString().getBytes(
+                    "UTF8")));
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+            return new DefaultHttpClient().execute(httpPost);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }
