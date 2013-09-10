@@ -33,8 +33,8 @@ public class MainActivity extends Activity {
     private static final boolean D = true;
 
     // Member fields
-    private BluetoothAdapter mBtAdapter;
-    private ArrayAdapter<String> mNewDevicesArrayAdapter;
+    private BluetoothAdapter bluetoothAdapter;
+    private ArrayAdapter<String> devices;
     private FileOutputStream log;
     private WifiManager wifiManager;
     private boolean bluetoothFinished, wifiFinished;
@@ -61,11 +61,11 @@ public class MainActivity extends Activity {
 
         // Initialize array adapters. One for already paired devices and
         // one for newly discovered devices
-        mNewDevicesArrayAdapter = new ArrayAdapter<String>(this, R.layout.device_name);
+        devices = new ArrayAdapter<String>(this, R.layout.device_name);
 
         // Find and set up the ListView for newly discovered devices
         ListView newDevicesListView = (ListView) findViewById(R.id.devices);
-        newDevicesListView.setAdapter(mNewDevicesArrayAdapter);
+        newDevicesListView.setAdapter(devices);
 
         // Register for broadcasts when a device is discovered
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
         registerReceiver(mReceiver, filter);
 
         // Get the local Bluetooth adapter
-        mBtAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
         registerReceiver(mReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
@@ -110,8 +110,8 @@ public class MainActivity extends Activity {
         super.onDestroy();
 
         // Make sure we're not doing discovery anymore
-        if (mBtAdapter != null) {
-            mBtAdapter.cancelDiscovery();
+        if (bluetoothAdapter != null) {
+            bluetoothAdapter.cancelDiscovery();
         }
 
         // Unregister broadcast listeners
@@ -127,8 +127,8 @@ public class MainActivity extends Activity {
         setProgressBarIndeterminateVisibility(true);
         setTitle(R.string.title_scanning);
 
-        if (mBtAdapter.isEnabled()) {
-        	mBtAdapter.startDiscovery();
+        if (bluetoothAdapter.isEnabled()) {
+        	bluetoothAdapter.startDiscovery();
         } else {
         	bluetoothFinished = true;
         }
@@ -154,19 +154,19 @@ public class MainActivity extends Activity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 // If it's already paired, skip it, because it's been listed already
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
-                    mNewDevicesArrayAdapter.add("BLUETOOTH: " + device.getName() + "\n" + device.getAddress());
+                    devices.add("BLUETOOTH: " + device.getName() + "\n" + device.getAddress());
                     log("bluetooth", device.getAddress(), device.getName());
                 }
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                if (mNewDevicesArrayAdapter.getCount() == 0) {
+                if (devices.getCount() == 0) {
                     String noDevices = getResources().getText(R.string.nothing_found).toString();
-                    mNewDevicesArrayAdapter.add(noDevices);
+                    devices.add(noDevices);
                 }
             	bluetoothFinished = true;
             } else if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
                 List<ScanResult> wifis = wifiManager.getScanResults();
                 for (ScanResult wifi : wifis) {
-                    mNewDevicesArrayAdapter.add("WIFI: " + wifi.SSID + "\n" + wifi.BSSID);
+                    devices.add("WIFI: " + wifi.SSID + "\n" + wifi.BSSID);
                     log("wifi", wifi.BSSID, wifi.SSID);
                 }
             	wifiFinished = true;
