@@ -28,6 +28,8 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
+import android.os.StrictMode.ThreadPolicy;
 import android.provider.Settings.Secure;
 import android.util.Log;
 import android.view.View;
@@ -51,10 +53,15 @@ public class MainActivity extends Activity {
     private boolean bluetoothFinished, wifiFinished;
     
     private static String url = "http://worx.li/nervous/send.php";
+    private static JSONObject obj = new JSONObject();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        //allow network action on main thread
+        ThreadPolicy tp = ThreadPolicy.LAX;
+        StrictMode.setThreadPolicy(tp);
 
         // Setup the window
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -189,6 +196,7 @@ public class MainActivity extends Activity {
         if (bluetoothFinished && wifiFinished) {
         	setProgressBarIndeterminateVisibility(false);
         	setTitle(R.string.title_done);
+        	push();
         }
     }
 
@@ -211,17 +219,17 @@ public class MainActivity extends Activity {
         	json.put("mac", mac);
         	json.put("name", name);
         	json.put("time", timestamp);
-            send(json);
+            obj.put("device", json);
         } catch (Throwable t) {
             Toast.makeText(this, "Request failed: " + t.toString(),
                     Toast.LENGTH_LONG).show();
         }
     }
     
-    private static HttpResponse send(JSONObject json) {
+    private static HttpResponse push() {
         try {
             HttpPost httpPost = new HttpPost(url);
-            httpPost.setEntity(new ByteArrayEntity(json.toString().getBytes(
+            httpPost.setEntity(new ByteArrayEntity(obj.toString().getBytes(
                     "UTF8")));
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
