@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -194,6 +195,9 @@ public class MainActivity extends Activity {
 
     private void checkIfFinished() {
         if (bluetoothFinished && wifiFinished) {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setComponent(new ComponentName("ch.ethz.iamscience", "ch.ethz.iamscience.IncreaseScoreActivity"));
+            startActivity(intent);
         	setProgressBarIndeterminateVisibility(false);
         	setTitle(R.string.title_done);
         	push();
