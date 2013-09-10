@@ -3,18 +3,21 @@ package ch.ethz.nervous;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
 
 import android.app.Activity;
@@ -200,7 +203,7 @@ public class MainActivity extends Activity {
             startActivity(intent);
         	setProgressBarIndeterminateVisibility(false);
         	setTitle(R.string.title_done);
-        	push();
+        	//push();
         }
     }
 
@@ -223,29 +226,35 @@ public class MainActivity extends Activity {
         	json.put("mac", mac);
         	json.put("name", name);
         	json.put("time", timestamp);
-            obj.put("device", json);
+        	push(json);
+            //obj.put("device"+obj.length(), json);
         } catch (Throwable t) {
             Toast.makeText(this, "Request failed: " + t.toString(),
                     Toast.LENGTH_LONG).show();
         }
     }
     
-    private static HttpResponse push() {
+    private static void push(JSONObject json) {
         try {
             HttpPost httpPost = new HttpPost(url);
-            httpPost.setEntity(new ByteArrayEntity(obj.toString().getBytes(
+            httpPost.setEntity(new ByteArrayEntity(json.toString().getBytes(
                     "UTF8")));
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
-            return new DefaultHttpClient().execute(httpPost);
+            Log.d("json_push", json.toString());
+            
+            try {
+            	HttpResponse resp = new DefaultHttpClient().execute(httpPost);
+                Log.d("http response", EntityUtils.toString(resp.getEntity()));
+            } catch (ClientProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return null;
     }
 
 }
