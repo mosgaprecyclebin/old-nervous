@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
     private ArrayAdapter<String> devices;
     private FileOutputStream log;
     private WifiManager wifiManager;
-    private boolean bluetoothFinished, wifiFinished;
+    private boolean bluetoothFinished, wifiFinished, finished;
     
     private static String url = "http://worx.li/nervous/send.php";
     private static JSONObject obj = new JSONObject();
@@ -59,7 +59,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
+        bluetoothFinished = false;
+        wifiFinished = false;
+        finished = false;
+
         //allow network action on main thread
         ThreadPolicy tp = ThreadPolicy.LAX;
         StrictMode.setThreadPolicy(tp);
@@ -194,13 +198,14 @@ public class MainActivity extends Activity {
     };
 
     private void checkIfFinished() {
-        if (bluetoothFinished && wifiFinished) {
+        if (bluetoothFinished && wifiFinished && !finished) {
             Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setComponent(new ComponentName("ch.ethz.iamscience", "ch.ethz.iamscience.IncreaseScoreActivity"));
             startActivity(intent);
         	setProgressBarIndeterminateVisibility(false);
         	setTitle(R.string.title_done);
         	push();
+        	finished = true;
         }
     }
 
