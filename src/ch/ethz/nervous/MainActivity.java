@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
     private ArrayAdapter<String> devices;
     private FileOutputStream log;
     private WifiManager wifiManager;
-    private boolean bluetoothFinished, wifiFinished, finished;
+    private boolean bluetoothFinished, wifiFinished, tracePathFinished, finished;
     
     private static String url = "http://worx.li/nervous/send.php";
     private static JSONObject obj = new JSONObject();
@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
 
         bluetoothFinished = false;
         wifiFinished = false;
+        tracePathFinished = false;
         finished = false;
 
         //allow network action on main thread
@@ -165,6 +166,8 @@ public class MainActivity extends Activity {
         	wifiFinished = true;
         }
 
+        (new CheckTracePathTask()).execute();
+
         checkIfFinished();
     }
 
@@ -202,7 +205,7 @@ public class MainActivity extends Activity {
     };
 
     private void checkIfFinished() {
-        if (bluetoothFinished && wifiFinished && !finished) {
+        if (bluetoothFinished && wifiFinished && tracePathFinished && !finished) {
             (new IncreaseScoreTask()).execute();
         	setProgressBarIndeterminateVisibility(false);
         }
@@ -257,6 +260,26 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
     }
+
+	private class CheckTracePathTask extends AsyncTask<Object,Void,Void> {
+
+		private String path;
+
+	    protected Void doInBackground(Object... objs) {
+	        TracePath tracePath = new TracePath();
+	        path = tracePath.getPath();
+	        return null;
+	    }
+
+	    @Override
+	    protected void onPostExecute(Void result) {
+	    	super.onPostExecute(result);
+	        devices.add("TRACE:\n" + path);
+	        Log.i("TracePath", path);
+	        tracePathFinished = true;
+	    }
+
+	}
 
 	private class GetDataTask extends AsyncTask<Object,Void,Void> {
 
