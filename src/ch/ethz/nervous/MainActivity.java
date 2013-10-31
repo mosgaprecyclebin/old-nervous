@@ -117,7 +117,7 @@ public class MainActivity extends Activity {
         	dir.mkdir();
         	File file = new File(dir, "log.txt");
         	log = new FileOutputStream(file, true);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
         	ex.printStackTrace();
         }
     }
@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
     	super.onStop();
     	try {
     		log.close();
-    	} catch (IOException ex) {
+    	} catch (Exception ex) {
     		ex.printStackTrace();
     	}
     }
@@ -218,7 +218,7 @@ public class MainActivity extends Activity {
         String line = type + "," + mac + "," + name + "," + timestamp + "\n";
         try {
         	log.write(line.getBytes());
-        } catch (IOException ex) {
+        } catch (Exception ex) {
         	Log.println(Log.ERROR, "nervous", ex.getMessage());
         }
         
@@ -267,7 +267,7 @@ public class MainActivity extends Activity {
 
 	    protected Void doInBackground(Object... objs) {
 	        TracePath tracePath = new TracePath();
-	        path = tracePath.getPath();
+	        path = tracePath.getPath("ethz.ch", 44444);
 	        return null;
 	    }
 
@@ -277,6 +277,7 @@ public class MainActivity extends Activity {
 	        devices.add("TRACE:\n" + path);
 	        Log.i("TracePath", path);
 	        tracePathFinished = true;
+	        checkIfFinished();
 	    }
 
 	}
