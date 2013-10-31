@@ -26,6 +26,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -39,13 +40,14 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
+import ch.ethz.iamscience.IAmScienceUser;
 
 public class MainActivity extends Activity {
     // Debugging
     private static final String TAG = "MainActivity";
     private static final boolean D = true;
 
-    // Member fields
+    private IAmScienceUser user;
     private BluetoothAdapter bluetoothAdapter;
     private ArrayAdapter<String> devices;
     private FileOutputStream log;
@@ -101,6 +103,9 @@ public class MainActivity extends Activity {
 
         wifiManager = (WifiManager) getBaseContext().getSystemService(Context.WIFI_SERVICE);
         registerReceiver(mReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+
+        user = IAmScienceUser.get(getApplicationContext());
+        (new GetDataTask()).execute();
     }
 
     @Override
@@ -198,11 +203,8 @@ public class MainActivity extends Activity {
 
     private void checkIfFinished() {
         if (bluetoothFinished && wifiFinished && !finished) {
-        	// TODO: contact server to increase score
+            (new IncreaseScoreTask()).execute();
         	setProgressBarIndeterminateVisibility(false);
-        	setTitle(R.string.title_done);
-        	push();
-        	finished = true;
         }
     }
 
@@ -255,5 +257,38 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
     }
+
+	private class GetDataTask extends AsyncTask<Object,Void,Void> {
+
+	    protected Void doInBackground(Object... objs) {
+	        user.updateData();
+	        return null;
+	    }
+
+	    @Override
+	    protected void onPostExecute(Void result) {
+	    	super.onPostExecute(result);
+	    	Log.i("i-am-science", "Score: " + user.getScore());
+	    }
+
+	}
+
+	private class IncreaseScoreTask extends AsyncTask<Object,Void,Void> {
+
+	    protected Void doInBackground(Object... objs) {
+	        user.newScore(user.getScore() + 1);
+	        return null;
+	    }
+
+	    @Override
+	    protected void onPostExecute(Void result) {
+	    	super.onPostExecute(result);
+	    	Log.i("i-am-science", "Increased score: " + user.getScore());
+        	setTitle(R.string.title_done);
+        	push();
+        	finished = true;
+	    }
+
+	}
 
 }
